@@ -11,8 +11,6 @@ We will create and launch:
 
 - **A Docker container** for the Flask microservice, designed for **Amazon EKS** deployment.
 
-- **Extra independent Docker containers** running traditional JavaScript games such as **[Tetris](https://gist.github.com/straker/3c98304f8a6a9174efd8292800891ea1)**, **[Frogger](https://gist.github.com/straker/82a4368849cbd441b05bd6a044f2b2d3)**, and **[Breakout](https://gist.github.com/straker/98a2aed6a7686d26c04810f08bfaf66b)**.
-
 - **Modern container registry processes**, uploading all images to:  
   - **Amazon ECR (Elastic Container Registry)**.
 
@@ -98,16 +96,15 @@ In comparison to fully abstracted offerings like **AWS RDS** or **Managed Micros
 
 ## AWS Architecture
 
-The **EKS setup we're constructing** features a fully managed **Amazon EKS cluster** in the `us-east-2` region.
+The **EKS setup we're constructing** features a fully managed **Amazon EKS cluster** in the `us-east-1` region.
 
 It comprises:
 
 - A fully managed **control plane** from AWS
-- Two separate **node groups**:
+- Separate **node groups**:
   - `flask-app` for the Flask microservice
-  - `games` for hosting classic JavaScript games like Tetris
 
-Inside the cluster, **pods** execute containerized apps such as `flask-app-1` and `tetris`, each isolated and scalable.
+Inside the cluster, **pods** execute containerized apps such as `flask-app-1`.
 
 The architecture integrates with key AWS services:
 
@@ -139,7 +136,7 @@ For newcomers to our content, we suggest beginning with: [AWS + Terraform: Simpl
 ## Clone this Repository
 
 ```bash
-git clone https://github.com/mamonaco1973/aws-k8s.git
+git clone https://github.com/mohitmatta/aws-k8s.git
 cd aws-k8s
 ```
 ## Execute the Build
