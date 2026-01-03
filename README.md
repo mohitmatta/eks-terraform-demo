@@ -2,8 +2,6 @@
 
 Welcome to **Episode 1** of the [Kubernetes in the Cloud](https://github.com/mohitmatta/eks-terraform-demo/blob/main/README.md) series.
 
-**This episode enhances the [AWS AutoScaling](https://github.com/mamonaco1973/aws-flask-asg/blob/main/README.md) and [Basic AWS Containers](https://github.com/mamonaco1973/aws-flask-container/blob/main/README.md) projects**, which involved deploying a straightforward Python microservice with Flask across various cloud platforms.
-
 This represents a **completely automated setup** for containerized microservices and web applications using **Amazon EKS (Elastic Kubernetes Service)**, facilitated by Terraform and shell scripts.
 
 We will create and launch:
