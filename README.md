@@ -136,8 +136,8 @@ For newcomers to our content, we suggest beginning with: [AWS + Terraform: Simpl
 ## Clone this Repository
 
 ```bash
-git clone https://github.com/mohitmatta/aws-k8s.git
-cd aws-k8s
+git clone https://github.com/mohitmatta/eks-terraform-demo.git
+cd eks-terraform-demo
 ```
 ## Execute the Build
 
