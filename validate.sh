@@ -1,0 +1,116 @@
+# =============================================================
+# Deployment Configuration: flask-app (Python Web Application on Port 8000)
+# =============================================================
+apiVersion: apps/v1                   # API version for handling Deployments
+kind: Deployment                      # Defines a Kubernetes Deployment object
+metadata:
+  name: flask-app                     # Identifier for the Deployment
+
+spec:
+  replicas: 2                         # Launch 2 instances (pods) of the Flask application
+
+  selector:
+    matchLabels:
+      app: flask-app                  # Identify Pods labeled with app=flask-app
+
+  template:
+    metadata:
+      labels:
+        app: flask-app                # Tag each Pod for identification by Service and HPA
+
+    spec:
+      serviceAccountName: dynamodb-access-sa  # Employ a dedicated service account for DynamoDB IAM permissions
+
+      nodeSelector:
+        nodegroup: flask-nodes                  # <-- Restrict scheduling to nodes bearing this label
+
+      containers:
+        - name: flask-app                       # Designation of the container in the Pod
+          image: 295537118504.dkr.ecr.us-east-1.amazonaws.com/flask-app:flask-app-rc1
+                                                # Retrieve the image from Amazon ECR with a release candidate label
+
+          ports:
+            - containerPort: 8000               # Open port 8000 (standard for Flask)
+
+          livenessProbe:
+            httpGet:
+              path: /gtg                        # Endpoint for health verification (matches ALB check)
+              port: 8000                        # Port within the container to check
+            initialDelaySeconds: 5              # Wait 5 seconds after launch for initial check
+            periodSeconds: 10                   # Perform checks every 10 seconds
+            failureThreshold: 3                 # Mark Pod as unhealthy after 3 failed attempts
+
+          readinessProbe:                       # Directs traffic solely to prepared pods
+            httpGet:
+              path: /gtg                        # Identical endpoint to livenessProbe (validates app and dependencies)
+              port: 8000                        # Container port to target
+            initialDelaySeconds: 2              # Reduced wait compared to liveness (readiness expected sooner)
+            periodSeconds: 5                    # Inspect every 5 seconds (more often than liveness)
+            failureThreshold: 1                 # Flag as unprepared immediately upon failure
+
+---
+# =============================================================
+# Service Definition: flask-app-service
+# =============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app-service             # Designation of the Service object
+
+spec:
+  selector:
+    app: flask-app                    # Direct traffic to Pods tagged with app=flask-app
+
+  ports:
+    - protocol: TCP                  # Employ TCP for HTTP communication
+      port: 80                       # External port (clients connect here)
+      targetPort: 8000              # Forward traffic to container port 8000
+
+---
+# =============================================================
+# Ingress: flask-app-ingress (Uses nginx)
+# =============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask-app-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /flask-app/api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: flask-app-service
+                port:
+                  number: 80
+
+---
+# =============================================================
+# Horizontal Pod Autoscaler: flask-app-hpa
+# =============================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: flask-app-hpa                # Name of the HPA resource
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1             # Target the Deployment API group
+    kind: Deployment                # Type of resource to scale
+    name: flask-app                 # Target the "flask-app" Deployment for scaling
+
+  minReplicas: 2                    # Minimum number of pods to maintain
+  maxReplicas: 5                    # Maximum number of pods that can be created based on load
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization         # Target CPU utilization metric
+          averageUtilization: 60    # Target average CPU usage at 60% before scaling up
