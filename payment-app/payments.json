@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "amount": 100.00,
+    "currency": "USD",
+    "status": "completed",
+    "description": "Payment for service A"
+  },
+  {
+    "id": "2",
+    "amount": 25.50,
+    "currency": "EUR",
+    "status": "pending",
+    "description": "Subscription fee"
+  }
+]
