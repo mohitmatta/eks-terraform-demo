@@ -210,20 +210,9 @@ The build is divided into four stages:
   - Stock list (JSON) at status `200`.
   - `"Not Found"` at status `404` if none.
 
-### `/games/tetris` (GET)
- - **Function**: Opens JavaScript Tetris game in browser.
-
+### `/flask-payment-app/api/<id>` (GET)
+ - **Function**: fetches payment information based on id
       ![eks](./diagrams/tetris.png)
-
-### `/games/frogger` (GET)
- - **Function**: Opens JavaScript Frogger game in browser.
-
-      ![eks](./diagrams/frogger.png)
-
-### `/games/breakout` (GET)
- - **Function**: Opens JavaScript Breakout game in browser.
-
-      ![eks](./diagrams/breakout.png)
 
 ## Kubernetes Cluster Verification and Autoscaling Demonstration
 
