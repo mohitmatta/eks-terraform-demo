@@ -1,6 +1,6 @@
 # Deploying Containerized Applications on Amazon EKS (Elastic Kubernetes Service)
 
-Welcome to **part 2** of the [Kubernetes in AWS Series](https://github.com/mohitmatta/eks-terraform-demo/blob/main/README.md) series.
+Welcome to **part 2** of the [Kubernetes in AWS](https://github.com/mohitmatta/eks-terraform-demo/blob/main/README.md) series.
 
 This represents a **completely automated setup** for containerized microservices and web applications using **Amazon EKS (Elastic Kubernetes Service)**, facilitated by Terraform and shell scripts.
 
