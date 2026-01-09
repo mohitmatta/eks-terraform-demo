@@ -177,8 +177,8 @@ The build is divided into four stages:
 #### 4. Launch Applications with `kubectl`
 - Links `kubectl` to the new EKS cluster.
 - Deploys Kubernetes manifests:
-  - [flask-app.yaml](./03-eks/yaml/flask-app.yaml.tmpl) for the microservice  
-  - [games.yaml](./03-eks/yaml/games.yaml.tmpl) for game containers
+  - [flask-app.yaml](./eks/templates/flask-app.yaml.tmpl) for the microservice  
+  - [games.yaml](./eks/templates/payment-app.yaml.tmpl) for game containers
 
 ## Exploring Build Results in AWS Console
 
@@ -186,7 +186,7 @@ The build is divided into four stages:
 
 ## API Endpoints Overview
 
-### `/flask-app/api/gtg` (GET)
+### `/flask-stock-app/api/gtg` (GET)
 - **Function**: Health verification.
 - **Output**: 
   - `{"connected": "true", "instance-id": <instance_id>}` (with `details` parameter).
