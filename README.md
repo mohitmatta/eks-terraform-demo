@@ -142,7 +142,7 @@ cd eks-terraform-demo
 Execute [check_env](check_env.sh) followed by [apply](apply.sh).
 
 ```bash
-~/aws-k8s$ ./apply.sh
+~/eks-terraform-demo$ ./apply.sh
 NOTE: Validating that required commands are found in your PATH.
 NOTE: aws is found in the current PATH.
 NOTE: docker is found in the current PATH.
