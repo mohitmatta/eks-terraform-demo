@@ -15,7 +15,10 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:Scan"                                    # Allow scanning the table (potentially expensive)
         ],
         Effect   = "Allow",                                  # Grant the specified actions
-        Resource = "${aws_dynamodb_table.stock-table.arn}"  # Restrict actions to this specific DynamoDB table
+        Resource = [
+          "${aws_dynamodb_table.stock-table.arn}",
+          "${aws_dynamodb_table.payment-table.arn}"
+        ]
       }
     ]
   })

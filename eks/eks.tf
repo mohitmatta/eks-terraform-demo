@@ -75,11 +75,11 @@ resource "aws_eks_node_group" "flask_nodes" {
   }
 }
 
-# Define a Launch Template for EKS Game Nodes
+# Define a Launch Template for EKS payment app Nodes
 # This template configures metadata options for security purposes
 
-resource "aws_launch_template" "eks_game_nodes" {
-  name = "eks-game-nodes"    # Assign a name to the launch template
+resource "aws_launch_template" "eks_payment_nodes" {
+  name = "eks-payment-nodes"    # Assign a name to the launch template
 
   metadata_options {
     http_endpoint = "enabled"  # Enable the instance metadata service (IMDS)
@@ -91,7 +91,7 @@ resource "aws_launch_template" "eks_game_nodes" {
     resource_type = "instance"
 
     tags = {
-      Name = "eks-game-node"
+      Name = "eks-payment-node"
     }
   }
 }
@@ -99,9 +99,9 @@ resource "aws_launch_template" "eks_game_nodes" {
 # Create an EKS Node Group
 # This provisions worker nodes in the EKS cluster and assigns the necessary IAM role
 
-resource "aws_eks_node_group" "game_nodes" {
+resource "aws_eks_node_group" "payment_nodes" {
   cluster_name    = aws_eks_cluster.flask_eks.name                           # Associate the node group with the specified EKS cluster
-  node_group_name = "game-nodes"                                             # Define the name of the node group
+  node_group_name = "payment-nodes"                                             # Define the name of the node group
   node_role_arn   = aws_iam_role.eks_node_role.arn                           # Attach the IAM role for worker nodes
   subnet_ids      = [data.aws_subnet.k8s-private-subnet-1.id,
                      data.aws_subnet.k8s-private-subnet-2.id]                # Deploy worker nodes in specified subnets
@@ -110,8 +110,8 @@ resource "aws_eks_node_group" "game_nodes" {
 
   # Use the previously defined launch template for worker node configuration
   launch_template {
-    id      = aws_launch_template.eks_game_nodes.id              # Reference the launch template ID
-    version = aws_launch_template.eks_game_nodes.latest_version  # Always use the latest launch template version
+    id      = aws_launch_template.eks_payment_nodes.id              # Reference the launch template ID
+    version = aws_launch_template.eks_payment_nodes.latest_version  # Always use the latest launch template version
   }
 
   scaling_config {
@@ -133,7 +133,7 @@ resource "aws_eks_node_group" "game_nodes" {
   }
 
   labels = {
-    nodegroup = "game-nodes"
+    nodegroup = "payment-nodes"
   }
 }
 # ==============================================================================
@@ -187,7 +187,7 @@ provider "kubernetes" {
 # =======================================================
 # Create a Kubernetes Service Account for DynamoDB Access
 # =======================================================
-resource "kubernetes_service_account" "dynamodb_access_sa" {
+resource "kubernetes_service_account_v1" "dynamodb_access_sa" {
   metadata {
     name      = "dynamodb-access-sa"  # Name of the Kubernetes service account
     namespace = "default"             # Namespace where the service account will be created
@@ -197,7 +197,7 @@ resource "kubernetes_service_account" "dynamodb_access_sa" {
   }
 }
 
-resource "kubernetes_service_account" "cluster_autoscaler" {
+resource "kubernetes_service_account_v1" "cluster_autoscaler" {
   metadata {
     name      = "cluster-autoscaler"
     namespace = "kube-system"
@@ -207,3 +207,21 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
   }
 }
 
+# ==============================================================================
+# Grant Cluster Admin Access to the Current Caller
+# ==============================================================================
+resource "aws_eks_access_entry" "admin" {
+  cluster_name  = aws_eks_cluster.flask_eks.name
+  principal_arn = data.aws_caller_identity.current.arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "admin" {
+  cluster_name  = aws_eks_cluster.flask_eks.name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = aws_eks_access_entry.admin.principal_arn
+
+  access_scope {
+    type = "cluster"
+  }
+}

@@ -46,7 +46,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   # Installed into kube-system namespace – standard for core components
 
   values = [
-    templatefile("${path.module}/yaml/aws-load-balancer.yaml.tmpl", {
+    templatefile("${path.module}/templates/aws-load-balancer.yaml.tmpl", {
       cluster_name = aws_eks_cluster.flask_eks.name
       # The EKS cluster name passed as a template variable – used in the Helm chart's config
 
@@ -82,7 +82,7 @@ resource "helm_release" "cluster_autoscaler" {
   # Explicit chart version to ensure reproducibility and avoid unplanned upgrades
 
   values = [
-    templatefile("${path.module}/yaml/autoscaler.yaml.tmpl", {
+    templatefile("${path.module}/templates/autoscaler.yaml.tmpl", {
       cluster_name = aws_eks_cluster.flask_eks.name
       # Cluster name used in the configuration to target the correct node groups for scaling
     })
@@ -115,7 +115,7 @@ resource "helm_release" "nginx_ingress" {
   create_namespace = true
   # Automatically creates the 'ingress-nginx' namespace if it doesn't exist
 
-  values = [file("${path.module}/yaml/nginx-values.yaml")]
+  values = [file("${path.module}/templates/nginx-values.yaml")]
   # Load custom Helm chart values from external YAML file for better readability
 }
 

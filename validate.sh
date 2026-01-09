@@ -1,116 +1,82 @@
-# =============================================================
-# Deployment Configuration: flask-app (Python Web Application on Port 8000)
-# =============================================================
-apiVersion: apps/v1                   # API version for handling Deployments
-kind: Deployment                      # Defines a Kubernetes Deployment object
-metadata:
-  name: flask-app                     # Identifier for the Deployment
+#!/bin/bash
 
-spec:
-  replicas: 2                         # Launch 2 instances (pods) of the Flask application
+export AWS_DEFAULT_REGION=us-east-1 
 
-  selector:
-    matchLabels:
-      app: flask-app                  # Identify Pods labeled with app=flask-app
+# ========================================
+# EKS Solution Test Script
+# - Verifies if the EKS cluster exists
+# - Waits for Ingress ALB hostname
+# - Waits for /gtg endpoint to return 200
+# - Executes application test against service
+# ========================================
 
-  template:
-    metadata:
-      labels:
-        app: flask-app                # Tag each Pod for identification by Service and HPA
+# ----------------------------------------
+# Step 1: Check if EKS Cluster Exists
+# Uses AWS CLI to describe the cluster
+# If it fails, cluster is missing — abort
+# ----------------------------------------
+if aws eks describe-cluster --name flask-eks-cluster > /dev/null 2>&1; then
+  echo "NOTE: Testing the EKS Solution."
+else
+  echo "ERROR: EKS Cluster does not exist."
+  exit 1 
+fi
 
-    spec:
-      serviceAccountName: dynamodb-access-sa  # Employ a dedicated service account for DynamoDB IAM permissions
+# ----------------------------------------
+# Step 2: Define Function to Get ALB Hostname
+# Extracts DNS hostname from Kubernetes Ingress status
+# Assumes ingress object is named 'flask-app-ingress'
+# Returns empty if not yet assigned
+# ----------------------------------------
+get_alb_name() {
+  kubectl get ingress flask-stock-app-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null
+}
 
-      nodeSelector:
-        nodegroup: flask-nodes                  # <-- Restrict scheduling to nodes bearing this label
+# ----------------------------------------
+# Step 3: Wait Until Ingress ALB Is Ready
+# Polls Kubernetes Ingress object every 30 seconds
+# Continues looping until ALB hostname is available
+# ----------------------------------------
+while true; do
+  ALB_NAME=$(get_alb_name)
 
-      containers:
-        - name: flask-app                       # Designation of the container in the Pod
-          image: 295537118504.dkr.ecr.us-east-1.amazonaws.com/flask-app:flask-app-rc1
-                                                # Retrieve the image from Amazon ECR with a release candidate label
+  if [ -n "$ALB_NAME" ]; then
+    # Hostname found — break out of loop
+    break
+  fi
 
-          ports:
-            - containerPort: 8000               # Open port 8000 (standard for Flask)
+  echo "WARNING: Ingress not ready yet. Waiting 30 seconds..."
+  sleep 30
+done
 
-          livenessProbe:
-            httpGet:
-              path: /gtg                        # Endpoint for health verification (matches ALB check)
-              port: 8000                        # Port within the container to check
-            initialDelaySeconds: 5              # Wait 5 seconds after launch for initial check
-            periodSeconds: 10                   # Perform checks every 10 seconds
-            failureThreshold: 3                 # Mark Pod as unhealthy after 3 failed attempts
+# ----------------------------------------
+# Step 4: Wait for Application Readiness
+# Loops until HTTP 200 is returned from ALB on /gtg
+# Confirms app is healthy and responding
+# ----------------------------------------
+while true; do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://$ALB_NAME/flask-stock-app/api/gtg")
+  
+  if [ "$HTTP_STATUS" -eq 200 ]; then
+    # App responded successfully — break out of loop
+    break
+  fi
 
-          readinessProbe:                       # Directs traffic solely to prepared pods
-            httpGet:
-              path: /gtg                        # Identical endpoint to livenessProbe (validates app and dependencies)
-              port: 8000                        # Container port to target
-            initialDelaySeconds: 2              # Reduced wait compared to liveness (readiness expected sooner)
-            periodSeconds: 5                    # Inspect every 5 seconds (more often than liveness)
-            failureThreshold: 1                 # Flag as unprepared immediately upon failure
+  echo "WARNING: Waiting... ALB not ready yet. Retrying in 30 seconds..."
+  sleep 30
+done
 
----
-# =============================================================
-# Service Definition: flask-app-service
-# =============================================================
-apiVersion: v1
-kind: Service
-metadata:
-  name: flask-app-service             # Designation of the Service object
+# ----------------------------------------
+# Step 6: Define Base Service URL
+# Used as input to the test script
+# Includes path prefix used in Ingress routing
+# ----------------------------------------
+SERVICE_URL="http://$ALB_NAME/flask-stock-app/api"
+echo "NOTE: URL for EKS Solution is $SERVICE_URL/gtg?details=true"
 
-spec:
-  selector:
-    app: flask-app                    # Direct traffic to Pods tagged with app=flask-app
-
-  ports:
-    - protocol: TCP                  # Employ TCP for HTTP communication
-      port: 80                       # External port (clients connect here)
-      targetPort: 8000              # Forward traffic to container port 8000
-
----
-# =============================================================
-# Ingress: flask-app-ingress (Uses nginx)
-# =============================================================
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: flask-app-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-spec:
-  ingressClassName: nginx
-  rules:
-    - http:
-        paths:
-          - path: /flask-app/api/?(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: flask-app-service
-                port:
-                  number: 80
-
----
-# =============================================================
-# Horizontal Pod Autoscaler: flask-app-hpa
-# =============================================================
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: flask-app-hpa                # Name of the HPA resource
-
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1             # Target the Deployment API group
-    kind: Deployment                # Type of resource to scale
-    name: flask-app                 # Target the "flask-app" Deployment for scaling
-
-  minReplicas: 2                    # Minimum number of pods to maintain
-  maxReplicas: 5                    # Maximum number of pods that can be created based on load
-
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization         # Target CPU utilization metric
-          averageUtilization: 60    # Target average CPU usage at 60% before scaling up
+# ----------------------------------------
+# Step 7: Run Functional Test
+# Calls test_candidates.py with the service URL
+# Fails and exits if test script returns non-zero
+# ----------------------------------------
+python3 test_stock_app.py "$SERVICE_URL" || { echo "ERROR: Application test failed. Exiting."; exit 1; }

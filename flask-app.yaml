@@ -1,65 +1,68 @@
 # =============================================================
-# Deployment Configuration: flask-app (Python Web Application on Port 8000)
+# Deployment: flask-app (Python Web App on Port 8000)
 # =============================================================
-apiVersion: apps/v1                   # API version for handling Deployments
-kind: Deployment                      # Defines a Kubernetes Deployment object
+apiVersion: apps/v1                   # API group for managing Deployments
+kind: Deployment                      # Declares a Kubernetes Deployment resource
 metadata:
-  name: flask-app                     # Identifier for the Deployment
+  name: flask-stock-app                     # Name of the Deployment object
 
 spec:
-  replicas: 2                         # Launch 2 instances (pods) of the Flask application
+  replicas: 2                         # Start with 2 replicas (pods) of the Flask app
 
   selector:
     matchLabels:
-      app: flask-app                  # Identify Pods labeled with app=flask-app
+      app: flask-stock-app                  # Match Pods with the label app=flask-app
 
   template:
     metadata:
       labels:
-        app: flask-app                # Tag each Pod for identification by Service and HPA
+        app: flask-stock-app                # Label applied to each Pod for selection by Service and HPA
 
     spec:
-      serviceAccountName: dynamodb-access-sa  # Employ a dedicated service account for DynamoDB IAM permissions
+      serviceAccountName: dynamodb-access-sa  # Use a specific service account for IAM access to DynamoDB
 
       nodeSelector:
-        nodegroup: flask-nodes                  # <-- Restrict scheduling to nodes bearing this label
+        nodegroup: flask-nodes                  # <-- Only schedule on nodes with this label
 
       containers:
-        - name: flask-app                       # Designation of the container in the Pod
-          image: 295537118504.dkr.ecr.us-east-1.amazonaws.com/flask-app:flask-app-rc1
-                                                # Retrieve the image from Amazon ECR with a release candidate label
-
+        - name: flask-stock-app                       # Container name within the Pod
+          image: 295537118504.dkr.ecr.us-east-1.amazonaws.com/flask-stock-app:stock-app-rc1
+                                                # Pull the image from Amazon ECR using a release candidate tag
+          imagePullPolicy: Always
+          env:
+          - name: PYTHONUNBUFFERED
+            value: "0"
           ports:
-            - containerPort: 8000               # Open port 8000 (standard for Flask)
+            - containerPort: 8000               # Expose port 8000 (Flask app default)
 
           livenessProbe:
             httpGet:
-              path: /gtg                        # Endpoint for health verification (matches ALB check)
-              port: 8000                        # Port within the container to check
-            initialDelaySeconds: 5              # Wait 5 seconds after launch for initial check
-            periodSeconds: 10                   # Perform checks every 10 seconds
-            failureThreshold: 3                 # Mark Pod as unhealthy after 3 failed attempts
+              path: /gtg                        # Health check endpoint (same as ALB health check)
+              port: 8000                        # Target port inside container
+            initialDelaySeconds: 5              # Delay before the first check after startup
+            periodSeconds: 10                   # Frequency of health checks
+            failureThreshold: 3                 # Pod is considered unhealthy after 3 consecutive failures
 
-          readinessProbe:                       # Directs traffic solely to prepared pods
+          readinessProbe:                       # Ensures traffic only hits ready pods
             httpGet:
-              path: /gtg                        # Identical endpoint to livenessProbe (validates app and dependencies)
-              port: 8000                        # Container port to target
-            initialDelaySeconds: 2              # Reduced wait compared to liveness (readiness expected sooner)
-            periodSeconds: 5                    # Inspect every 5 seconds (more often than liveness)
-            failureThreshold: 1                 # Flag as unprepared immediately upon failure
+              path: /gtg                        # Same endpoint as livenessProbe (checks app + dependencies)
+              port: 8000                        # Target port inside container
+            initialDelaySeconds: 2              # Shorter delay than liveness (assumes readiness is faster)
+            periodSeconds: 5                    # Check every 5 seconds (more frequent than liveness)
+            failureThreshold: 1                 # Immediately mark as "not ready" on failure
 
 ---
 # =============================================================
-# Service Definition: flask-app-service
+# Service: flask-stock-app-service
 # =============================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: flask-app-service             # Designation of the Service object
+  name: flask-stock-app-service             # Name of the Service resource
 
 spec:
   selector:
-    app: flask-app                    # Direct traffic to Pods tagged with app=flask-app
+    app: flask-stock-app                    # Route traffic to Pods with label app=flask-app
 
   ports:
     - protocol: TCP                  # Use TCP protocol for HTTP traffic
@@ -68,12 +71,12 @@ spec:
 
 ---
 # =============================================================
-# Ingress: flask-app-ingress (Uses nginx)
+# Ingress: flask-stock-app-ingress (Uses nginx)
 # =============================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: flask-app-ingress
+  name: flask-stock-app-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
@@ -81,28 +84,28 @@ spec:
   rules:
     - http:
         paths:
-          - path: /flask-app/api/?(.*)
+          - path: /flask-stock-app/api/?(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: flask-app-service
+                name: flask-stock-app-service
                 port:
                   number: 80
 
 ---
 # =============================================================
-# Horizontal Pod Autoscaler: flask-app-hpa
+# Horizontal Pod Autoscaler: flask-stock-app-hpa
 # =============================================================
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: flask-app-hpa                # Name of the HPA resource
+  name: flask-stock-app-hpa                # Name of the HPA resource
 
 spec:
   scaleTargetRef:
     apiVersion: apps/v1             # Target the Deployment API group
     kind: Deployment                # Type of resource to scale
-    name: flask-app                 # Target the "flask-app" Deployment for scaling
+    name: flask-stock-app                 # Target the "flask-stock-app" Deployment for scaling
 
   minReplicas: 2                    # Minimum number of pods to maintain
   maxReplicas: 5                    # Maximum number of pods that can be created based on load

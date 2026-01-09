@@ -3,13 +3,16 @@ import os
 from flask import Flask, Response, request
 import boto3
 from boto3.dynamodb.conditions import Key
+import logging
+import sys
+from decimal import Decimal
 
 # Obtaining the current machine's hostname for diagnostic purposes or status monitoring
 instance_id = os.popen("hostname -I").read().strip()
 
 # Obtaining the DynamoDB table name via environment variables, with a fallback default
 # Set TC_DYNAMO_TABLE in the environment to define the specific table name.
-dynamo_table_name = os.environ.get('TC_DYNAMO_TABLE', 'Stocks')
+dynamo_table_name = os.environ.get('TC_DYNAMO_TABLE', 'stocks')
 
 # Setting up the DynamoDB resource and table instance with boto3
 # Verify that AWS credentials and region settings are correctly configured.
@@ -18,6 +21,19 @@ dyndb_table = dyndb_client.Table(dynamo_table_name)
 
 # Setting up the Flask web application
 stocks_app = Flask(__name__)
+
+# Configure logging to work with Gunicorn
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    stocks_app.logger.handlers = gunicorn_logger.handlers
+    stocks_app.logger.setLevel(gunicorn_logger.level)
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 # Fallback route for handling unspecified requests
 @stocks_app.route('/', methods=['GET'])
@@ -64,15 +80,16 @@ def get_stock(symbol):
         )
 
         if len(response['Items']) == 0:
-            raise Exception  # Raise an exception if no items are found
+            return "Stock not found", 404
 
         return Response(
-            json.dumps(response['Items']),
+            json.dumps(response['Items'], cls=DecimalEncoder),
             status=200,
             mimetype="application/json"
         )
-    except:
-        return "Not Found", 404
+    except Exception as e:
+        stocks_app.logger.error(f"Error fetching stock {symbol}: {e}", exc_info=True)
+        return f"Error: {str(e)}", 500
 
 # Create or modify a stock entry
 @stocks_app.route('/stock/<symbol>', methods=['POST'])
@@ -92,7 +109,8 @@ def post_stock(symbol):
         data['symbol'] = symbol
         dyndb_table.put_item(Item=data)
     except Exception as ex:
-        return "Unable to update", 500
+        stocks_app.logger.error(f"Error updating stock {symbol}: {ex}", exc_info=True)
+        return f"Error: {str(ex)}", 500
 
     return Response(
         json.dumps({"symbol": symbol}),
@@ -111,13 +129,11 @@ def get_stocks():
     try:
         items = dyndb_table.scan()['Items']
 
-        if len(items) == 0:
-            raise Exception  # Raise an exception if no items are found
-
         return Response(
-            json.dumps(items),
+            json.dumps(items, cls=DecimalEncoder),
             status=200,
             mimetype="application/json"
         )
-    except:
-        return "Not Found", 404
+    except Exception as e:
+        stocks_app.logger.error(f"Error fetching stocks: {e}", exc_info=True)
+        return f"Error: {str(e)}", 500

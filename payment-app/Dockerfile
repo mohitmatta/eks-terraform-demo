@@ -1,10 +1,20 @@
-FROM python:3.9-slim
+# Employ the standard Ubuntu 24.04 image as the foundation
+FROM ubuntu:24.04
 
-WORKDIR /app
+# Refresh package lists and set up Python 3 along with pip
+RUN apt update -y && \
+    apt install -y python3-pip && \
+    apt-get clean && \
+    mkdir /flask && \
+    chmod 777 /flask
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY main.py /flask/
+COPY requirements.txt /flask/
+COPY start_payment_flask_app.sh /flask/
 
-COPY . .
+RUN sed -i 's/\r$//' /flask/start_payment_flask_app.sh && \
+    chmod +x /flask/start_payment_flask_app.sh && \
+    pip3 install -r /flask/requirements.txt --break-system-packages
 
-CMD ["python", "app.py"]
+EXPOSE 8000
+ENTRYPOINT [ "/flask/start_payment_flask_app.sh" ]

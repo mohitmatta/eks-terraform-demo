@@ -1,37 +1,39 @@
 # =============================================================
-# Deployment: flask-app (Python Web App on Port 8000)
+# Deployment: flask-payment-app (Python Web App on Port 8000)
 # =============================================================
 apiVersion: apps/v1                   # API group for managing Deployments
 kind: Deployment                      # Declares a Kubernetes Deployment resource
 metadata:
-  name: flask-stock-app                     # Name of the Deployment object
+  name: flask-payment-app                     # Name of the Deployment object
 
 spec:
-  replicas: 2                         # Start with 2 replicas (pods) of the Flask app
+  replicas: 1                         # Start with 1 replica (pods) of the Payment app
 
   selector:
     matchLabels:
-      app: flask-stock-app                  # Match Pods with the label app=flask-app
+      app: flask-payment-app                  # Match Pods with the label app=flask-payment-app
 
   template:
     metadata:
       labels:
-        app: flask-stock-app                # Label applied to each Pod for selection by Service and HPA
+        app: flask-payment-app                # Label applied to each Pod for selection by Service and HPA
 
     spec:
       serviceAccountName: dynamodb-access-sa  # Use a specific service account for IAM access to DynamoDB
 
       nodeSelector:
-        nodegroup: flask-nodes                  # <-- Only schedule on nodes with this label
+        nodegroup: payment-nodes                  # <-- Only schedule on nodes with this label
 
       containers:
-        - name: flask-stock-app                       # Container name within the Pod
-          image: ${account_id}.dkr.ecr.us-east-1.amazonaws.com/flask-stock-app:stock-app-rc1
+        - name: flask-payment-app                       # Container name within the Pod
+          image: 295537118504.dkr.ecr.us-east-1.amazonaws.com/flask-payment-app:payment-app-rc1
                                                 # Pull the image from Amazon ECR using a release candidate tag
           imagePullPolicy: Always
           env:
           - name: PYTHONUNBUFFERED
             value: "0"
+          - name: TC_DYNAMO_TABLE
+            value: "payments"
           ports:
             - containerPort: 8000               # Expose port 8000 (Flask app default)
 
@@ -53,16 +55,16 @@ spec:
 
 ---
 # =============================================================
-# Service: flask-stock-app-service
+# Service: flask-payment-app-service
 # =============================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: flask-stock-app-service             # Name of the Service resource
+  name: flask-payment-app-service             # Name of the Service resource
 
 spec:
   selector:
-    app: flask-stock-app                    # Route traffic to Pods with label app=flask-app
+    app: flask-payment-app                    # Route traffic to Pods with label app=flask-payment-app
 
   ports:
     - protocol: TCP                  # Use TCP protocol for HTTP traffic
@@ -71,12 +73,12 @@ spec:
 
 ---
 # =============================================================
-# Ingress: flask-stock-app-ingress (Uses nginx)
+# Ingress: flask-payment-app-ingress (Uses nginx)
 # =============================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: flask-stock-app-ingress
+  name: flask-payment-app-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
@@ -84,30 +86,30 @@ spec:
   rules:
     - http:
         paths:
-          - path: /flask-stock-app/api/?(.*)
+          - path: /flask-payment-app/api/?(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: flask-stock-app-service
+                name: flask-payment-app-service
                 port:
                   number: 80
 
 ---
 # =============================================================
-# Horizontal Pod Autoscaler: flask-stock-app-hpa
+# Horizontal Pod Autoscaler: flask-payment-app-hpa
 # =============================================================
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: flask-stock-app-hpa                # Name of the HPA resource
+  name: flask-payment-app-hpa                # Name of the HPA resource
 
 spec:
   scaleTargetRef:
     apiVersion: apps/v1             # Target the Deployment API group
     kind: Deployment                # Type of resource to scale
-    name: flask-stock-app                 # Target the "flask-stock-app" Deployment for scaling
+    name: flask-payment-app                 # Target the "flask-payment-app" Deployment for scaling
 
-  minReplicas: 2                    # Minimum number of pods to maintain
+  minReplicas: 1                    # Minimum number of pods to maintain
   maxReplicas: 5                    # Maximum number of pods that can be created based on load
 
   metrics:

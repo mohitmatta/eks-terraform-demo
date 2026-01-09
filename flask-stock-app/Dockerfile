@@ -9,12 +9,13 @@ RUN apt update -y && \
     chmod 777 /flask                                
 
 # Transfer application files into the container's /flask folder
-COPY app.py /flask/                                 
+COPY main.py /flask/                                 
 COPY requirements.txt /flask/                       
 COPY start_flask_app.sh /flask/                     
 
 # Configure the application setup
-RUN chmod +x /flask/start_flask_app.sh && \         
+RUN sed -i 's/\r$//' /flask/start_flask_app.sh && \
+    chmod +x /flask/start_flask_app.sh && \         
     pip3 install -r /flask/requirements.txt --break-system-packages 
 
 # Make port 8000 accessible for the Flask app
