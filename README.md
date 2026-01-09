@@ -1,6 +1,6 @@
 # Deploying Containerized Applications on Amazon EKS (Elastic Kubernetes Service)
 
-Welcome to **Episode 1** of the [Kubernetes in the Cloud](https://github.com/mohitmatta/eks-terraform-demo/blob/main/README.md) series.
+Welcome to **part 2** of the [Kubernetes in AWS Series](https://github.com/mohitmatta/eks-terraform-demo/blob/main/README.md) series.
 
 This represents a **completely automated setup** for containerized microservices and web applications using **Amazon EKS (Elastic Kubernetes Service)**, facilitated by Terraform and shell scripts.
 
@@ -18,7 +18,7 @@ We will create and launch:
 
 - **Kubernetes configurations** encompassing **Deployments**, **Services**, and **Ingress** for robust, scalable operations.
 
-- **NGINX acting as a centralized Ingress controller**, directing all services and games via a single **AWS Load Balancer**.
+- **NGINX acting as a centralized Ingress controller**, directing all services via a single **AWS Load Balancer**.
 
 ## Categorizing Amazon EKS: PaaS or IaaS?
 
@@ -102,7 +102,7 @@ It comprises:
 
 - A fully managed **control plane** from AWS
 - Separate **node groups**:
-  - `flask-app` for the Flask microservice
+  - `flask-app` for the Flask microservice and payment-node nodegroup for payment application.
 
 Inside the cluster, **pods** execute containerized apps such as `flask-app-1`.
 
@@ -130,8 +130,6 @@ This illustration depicts the AWS infrastructure supporting the EKS cluster, fea
 * [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
 * [Install Postman](https://www.postman.com/downloads/) for testing
 * [Install Docker](https://docs.docker.com/engine/install/)
-
-For newcomers to our content, we suggest beginning with: [AWS + Terraform: Simple Configuration](https://youtu.be/BCMQo0CB9wk). It offers a detailed walkthrough for setting up Terraform, Packer, and AWS CLI.
 
 ## Clone this Repository
 
@@ -168,13 +166,13 @@ The build is divided into four stages:
 - Configures the **Amazon VPC** and networking for the EKS cluster.
 
 #### 2. Create and Upload Docker Images
-- Constructs Docker images for the **Flask microservice** and three **JavaScript game apps** (Tetris, Frogger, Breakout).
+- Constructs Docker images for the **Flask stock microservice** and **Payment app**.
 - Uploads all images to their **ECR repositories**.
 
 #### 3. Deploy Amazon EKS Cluster
 - Launches the **Amazon EKS cluster** with two managed node groups:
   - `flask-nodes` for the Flask microservice
-  - `game-nodes` for game containers
+  - `payment-nodes` for payment containers
 
 #### 4. Launch Applications with `kubectl`
 - Links `kubectl` to the new EKS cluster.
@@ -241,11 +239,6 @@ Begin by listing pods in the default namespace:
 kubectl get pods
 ```
 
-Check for apps in the `games` namespace:
-
-```bash
-kubectl get pods -n games
-```
 
 ---
 
@@ -255,18 +248,16 @@ Confirm `Deployment` resources:
 
 ```bash
 kubectl get deployments
-kubectl get deployments -n games
 ```
 
 ---
 
 ### Step 3: Validate Ingress Configuration
 
-Review Ingress in both namespaces:
+Review Ingress :
 
 ```bash
 kubectl get ingress
-kubectl get ingress -n games
 ```
 
 ---
