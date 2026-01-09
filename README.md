@@ -192,22 +192,22 @@ The build is divided into four stages:
   - `{"connected": "true", "instance-id": <instance_id>}` (with `details` parameter).
   - 200 OK without content otherwise.
 
-### `/flask-app/api/<name>` (GET)
-- **Function**: Fetch candidate by name.
+### `/flask-stock-app/api/stock/<symbol>` (GET)
+- **Function**: Fetch stock by name.
 - **Output**: 
-  - Candidate information (JSON) at status `200`.
+  - Stock information (JSON) at status `200`.
   - `"Not Found"` at status `404` if absent.
 
-### `/flask-app/api/<name>` (POST)
-- **Function**: Add or modify candidate by name.
+### `/flask-stock-app/api/stock/<symbol>` (POST)
+- **Function**: Add or modify stock by name.
 - **Output**: 
-  - `{"CandidateName": <name>}` at status `200`.
+  - `{"stockname": <symbol>}` at status `200`.
   - `"Unable to update"` at status `500` on error.
 
-### `/flask-app/api/candidates` (GET)
+### `/flask-stock-app/api/stocks` (GET)
 - **Function**: Retrieve all candidates.
 - **Output**: 
-  - Candidate list (JSON) at status `200`.
+  - Stock list (JSON) at status `200`.
   - `"Not Found"` at status `404` if none.
 
 ### `/games/tetris` (GET)
