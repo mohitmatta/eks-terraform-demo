@@ -16,8 +16,7 @@ resource "aws_iam_policy" "dynamodb_access" {
         ],
         Effect   = "Allow",                                  # Grant the specified actions
         Resource = [
-          "${aws_dynamodb_table.stock-table.arn}",
-          "${aws_dynamodb_table.payment-table.arn}"
+          "${aws_dynamodb_table.stock-table.arn}"
         ]
       }
     ]
