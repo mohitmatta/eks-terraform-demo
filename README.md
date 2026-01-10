@@ -181,8 +181,8 @@ The build is divided into four stages:
 #### 4. Launch Applications with `kubectl`
 - Links `kubectl` to the new EKS cluster.
 - Deploys Kubernetes manifests:
-  - [flask-app.yaml](./eks/templates/flask-app.yaml.tmpl) for the microservice  
-  - [payment-app.yaml](./eks/templates/payment-app.yaml.tmpl) for game containers
+  - [flask-app.yaml](./eks/templates/flask-app.yaml.tmpl) for the flask-stock-app microservice  
+  - [payment-app.yaml](./eks/templates/payment-app.yaml.tmpl) for payment-app containers
 
 ## Exploring Build Results in AWS Console
 
