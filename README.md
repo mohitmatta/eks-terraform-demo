@@ -216,7 +216,6 @@ The build is divided into four stages:
 
 ### `/flask-payment-app/api/<id>` (GET)
  - **Function**: fetches payment information based on id
-      ![eks](./diagrams/tetris.png)
 
 ## Kubernetes Cluster Verification and Autoscaling Demonstration
 
