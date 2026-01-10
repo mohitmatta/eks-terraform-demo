@@ -11,7 +11,7 @@ export AWS_DEFAULT_REGION=us-east-1
 
 # ----------------------------------------
 # Step 1: Remove Kubernetes Resources
-# Mute output for stress.yaml and games.yaml
+# Mute output for stress.yaml
 # flask-app.yaml might be absent; issue alert if removal unsuccessful
 # ----------------------------------------
 
@@ -19,10 +19,14 @@ kubectl delete -f flask-app.yaml || {
     echo "WARNING: Failed to delete Kubernetes deployment. It may not exist."
 }
 
+kubectl delete -f payments.yaml || {
+    echo "WARNING: Failed to delete Kubernetes deployment. It may not exist."
+}
+
 # ----------------------------------------
 # Step 2: Dismantle EKS Terraform Setup
 # ----------------------------------------
-cd "eks" || { echo "ERROR: Failed to change directory to 03-eks. Exiting."; exit 1; }
+cd "eks" || { echo "ERROR: Failed to change directory to eks. Exiting."; exit 1; }
 echo "NOTE: Destroying EKS cluster."
 
 # Set up Terraform if initialization hasn't occurred
@@ -80,12 +84,17 @@ aws ecr delete-repository --repository-name "$ECR_REPOSITORY_NAME" --force || {
     echo "WARNING: Failed to delete ECR repository. It may not exist."
 }
 
+# Eliminate Flask application ECR repo forcibly, including all images
+ECR_REPOSITORY_NAME="flask-payment-app"
+aws ecr delete-repository --repository-name "$ECR_REPOSITORY_NAME" --force || {
+    echo "WARNING: Failed to delete ECR repository. It may not exist."
+}
 
 
 # ----------------------------------------
 # Step 5: Dismantle ECR Terraform Resources
 # ----------------------------------------
-cd "ecr" || { echo "ERROR: Failed to change directory to 01-ecr. Exiting."; exit 1; }
+cd "ecr" || { echo "ERROR: Failed to change directory to ecr. Exiting."; exit 1; }
 
 # Remove ECR Terraform components (repos, policies)
 terraform destroy -auto-approve || { echo "ERROR: Terraform destroy failed. Exiting."; exit 1; }
