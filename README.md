@@ -121,7 +121,11 @@ Infrastructure is defined via **Terraform**, with application handling through `
 
 This illustration depicts the AWS infrastructure supporting the EKS cluster, featuring EC2 node groups in private subnets, a Network Load Balancer for external traffic, and linked services like DynamoDB and Elastic Container Registry.
 
-![eks-infra](./resources/application-setup.svg)
+![eks-infra](./resources/application-setup.png)
+
+## IAM Role Setup 
+
+![eks-infra](./resources/application-setup.png)
 
 ## Requirements
 
