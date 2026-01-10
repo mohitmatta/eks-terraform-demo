@@ -121,7 +121,7 @@ Infrastructure is defined via **Terraform**, with application handling through `
 
 This illustration depicts the AWS infrastructure supporting the EKS cluster, featuring EC2 node groups in private subnets, a Network Load Balancer for external traffic, and linked services like DynamoDB and Elastic Container Registry.
 
-![eks-infra](./diagrams/aws-k8s-infra.drawio.png)
+![eks-infra](./resources/application-setup.svg)
 
 ## Requirements
 
@@ -178,7 +178,7 @@ The build is divided into four stages:
 - Links `kubectl` to the new EKS cluster.
 - Deploys Kubernetes manifests:
   - [flask-app.yaml](./eks/templates/flask-app.yaml.tmpl) for the microservice  
-  - [games.yaml](./eks/templates/payment-app.yaml.tmpl) for game containers
+  - [payment-app.yaml](./eks/templates/payment-app.yaml.tmpl) for game containers
 
 ## Exploring Build Results in AWS Console
 
