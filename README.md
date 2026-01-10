@@ -182,7 +182,7 @@ The build is divided into four stages:
 
 ## Exploring Build Results in AWS Console
 
-![consoles](./diagrams/consoles.gif)
+![consoles](./resources/build_results.gif)
 
 ## API Endpoints Overview
 
