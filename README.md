@@ -102,7 +102,7 @@ It comprises:
 
 - A fully managed **control plane** from AWS
 - Separate **node groups**:
-  - `flask-app` for the Flask microservice and payment-node nodegroup for payment application.
+  - `flask-app` nodegroup for stock microservice and payment-node nodegroup for payment application.
 
 Inside the cluster, **pods** execute containerized apps such as `flask-app-1`.
 
